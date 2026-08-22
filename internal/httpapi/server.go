@@ -22,7 +22,7 @@ func New(svc *service.Service) *Server {
 }
 func (s *Server) Handler() http.Handler { return s.mux }
 func (s *Server) routes() {
-	s.mux.Handle("GET /", http.HandlerFunc(s.stats))
+	s.mux.HandleFunc("GET /", s.home)
 	s.mux.Handle("GET /static/", http.StripPrefix("/static/", webui.Handler()))
 	s.mux.HandleFunc("GET /healthz", s.health)
 	s.mux.HandleFunc("GET /readyz", s.ready)

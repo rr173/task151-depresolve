@@ -8,7 +8,7 @@ import (
 )
 
 func (s *Server) home(w http.ResponseWriter, r *http.Request) {
-	http.Redirect(w, r, "/api/stats", http.StatusTemporaryRedirect)
+	http.Redirect(w, r, "/static/index.html", http.StatusTemporaryRedirect)
 }
 func (s *Server) health(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, map[string]any{"ok": true, "uptime_seconds": int64(timeSince(s.started))})
