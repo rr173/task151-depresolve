@@ -28,7 +28,7 @@ func writeErr(w http.ResponseWriter, err error) {
 	status := http.StatusInternalServerError
 	if errors.Is(err, model.ErrInvalidInput) {
 		status = http.StatusBadRequest
-	} else if errors.Is(err, model.ErrAlreadyExists) {
+	} else if model.IsNotFound(err) {
 		status = http.StatusNotFound
 	} else if model.IsConflict(err) || errors.Is(err, model.ErrAlreadyExists) {
 		status = http.StatusConflict

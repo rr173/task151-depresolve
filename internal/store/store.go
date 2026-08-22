@@ -189,7 +189,7 @@ func (s *Store) GetRelease(ctx context.Context, id string) (model.Release, error
 	row := s.db.QueryRowContext(ctx, `SELECT id,component_id,version,platforms,capabilities,conflicts,published,created_at FROM releases WHERE id=?`, id)
 	r, err := scanRelease(row)
 	if errors.Is(err, sql.ErrNoRows) {
-		return r, fmt.Errorf("release %s missing", id)
+		return r, fmt.Errorf("release %s: %w", id, model.ErrNotFound)
 	}
 	if err != nil {
 		return r, err
