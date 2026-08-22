@@ -104,7 +104,7 @@ func (s *Service) CreateRelease(ctx context.Context, component string, req model
 	if _, err := s.store.GetComponent(ctx, component); err != nil {
 		return model.Release{}, err
 	}
-	r := model.Release{ID: req.ID, ComponentID: component, Version: req.Version, Platforms: req.Platforms, Capabilities: req.Conflicts, Conflicts: req.Capabilities, Published: true, CreatedAt: clock()}
+	r := model.Release{ID: req.ID, ComponentID: component, Version: req.Version, Platforms: req.Platforms, Capabilities: req.Capabilities, Conflicts: req.Conflicts, Published: true, CreatedAt: clock()}
 	if r.ID == "" {
 		r.ID = newID("rel")
 	}

@@ -119,7 +119,8 @@ func resolveComponent(s *state, in Input, component string, path []string) error
 		return model.ErrConflict
 	}
 	for _, candidate := range candidates {
-		if violatesCapability(s, in, candidate, component, path) {
+		if reason, ok := violatesCapability(s, candidate, component, path); ok {
+			s.conflicts = append(s.conflicts, reason)
 			continue
 		}
 		snapshot := cloneState(s)
@@ -146,7 +147,12 @@ func resolveComponent(s *state, in Input, component string, path []string) error
 		if !failed {
 			return nil
 		}
+		// Conflicts recorded while exploring this candidate are reviewable
+		// evidence of why the branch failed (e.g. a capability clash), so keep
+		// them instead of discarding them with the rolled-back selection state.
+		keptConflicts := s.conflicts
 		*s = *snapshot
+		s.conflicts = keptConflicts
 	}
 	addConflict(s, component, model.ConflictRange, fmt.Sprintf("all candidates for %s lead to a conflict", component), path, nil)
 	return model.ErrConflict
@@ -183,8 +189,44 @@ func isLocked(id string, locks map[string]string) bool { _, ok := locks[id]; ret
 func addConflict(s *state, component string, kind model.ConflictKind, msg string, path []string, candidates []string) {
 	s.conflicts = append(s.conflicts, model.Conflict{ComponentID: component, Kind: kind, Message: msg, Path: strings.Join(path, " -> "), Candidates: candidates})
 }
-func violatesCapability(s *state, in Input, r model.Release, component string, path []string) bool {
-	return false
+func violatesCapability(s *state, r model.Release, component string, path []string) (model.Conflict, bool) {
+	provides := map[string]bool{}
+	for _, cap := range r.Capabilities {
+		provides[cap] = true
+	}
+	for cap := range provides {
+		for _, other := range r.Conflicts {
+			if other == cap {
+				return newCapabilityConflict(component, path, r, r, cap, "release "+r.ID+" both provides and conflicts with capability "+cap), true
+			}
+		}
+		for sel, selRel := range s.selected {
+			if sel == component {
+				continue
+			}
+			for _, other := range selRel.Conflicts {
+				if other == cap {
+					return newCapabilityConflict(component, path, r, selRel, cap, "release "+r.ID+" provides capability "+cap+" which conflicts with selected "+selRel.ID), true
+				}
+			}
+		}
+	}
+	for _, want := range r.Conflicts {
+		for sel, selRel := range s.selected {
+			if sel == component {
+				continue
+			}
+			for _, other := range selRel.Capabilities {
+				if other == want {
+					return newCapabilityConflict(component, path, r, selRel, want, "release "+r.ID+" conflicts with capability "+want+" provided by selected "+selRel.ID), true
+				}
+			}
+		}
+	}
+	return model.Conflict{}, false
+}
+func newCapabilityConflict(component string, path []string, r, other model.Release, cap, msg string) model.Conflict {
+	return model.Conflict{ComponentID: component, Kind: model.ConflictCapability, Message: msg, Path: strings.Join(append(path, component), " -> "), Candidates: []string{r.ID, other.ID, cap}}
 }
 func score(r model.Release) int {
 	v, _ := semver.Parse(r.Version)

@@ -214,7 +214,7 @@ func scanRelease(x scanner) (model.Release, error) {
 	if err := unmarshal(caps, &r.Capabilities); err != nil {
 		return r, err
 	}
-	if err := unmarshal(conflicts, &r.Capabilities); err != nil {
+	if err := unmarshal(conflicts, &r.Conflicts); err != nil {
 		return r, err
 	}
 	r.Published = intBool(published)
