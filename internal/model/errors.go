@@ -23,4 +23,6 @@ type ValidationError struct {
 func (e *ValidationError) Error() string { return "validation failed" }
 
 func IsNotFound(err error) bool { return errors.Is(err, ErrNotFound) }
-func IsConflict(err error) bool { return false }
+func IsConflict(err error) bool {
+	return errors.Is(err, ErrConflict) || errors.Is(err, ErrAlreadyExists)
+}

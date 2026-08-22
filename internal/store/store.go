@@ -50,7 +50,7 @@ func intBool(v int) bool { return v != 0 }
 func (s *Store) CreateComponent(ctx context.Context, c model.Component) error {
 	_, err := s.db.ExecContext(ctx, `INSERT INTO components(id,name,ecosystem,stable_only,created_at,updated_at) VALUES(?,?,?,?,?,?)`, c.ID, c.Name, c.Ecosystem, boolInt(c.StableOnly), c.CreatedAt.Unix(), c.UpdatedAt.Unix())
 	if err != nil && strings.Contains(err.Error(), "UNIQUE") {
-		return fmt.Errorf("component %s already exists", c.ID)
+		return fmt.Errorf("%w: component %s", model.ErrAlreadyExists, c.ID)
 	}
 	return err
 }
@@ -111,7 +111,7 @@ func (s *Store) CreateRelease(ctx context.Context, r model.Release) error {
 	if _, err = tx.ExecContext(ctx, `INSERT INTO releases(id,component_id,version,platforms,capabilities,conflicts,published,created_at) VALUES(?,?,?,?,?,?,?,?)`, r.ID, r.ComponentID, r.Version, marshal(r.Platforms), marshal(r.Capabilities), marshal(r.Conflicts), boolInt(r.Published), r.CreatedAt.Unix()); err != nil {
 		tx.Rollback()
 		if strings.Contains(err.Error(), "UNIQUE") {
-			return model.ErrAlreadyExists
+			return fmt.Errorf("%w: release %s", model.ErrAlreadyExists, r.ID)
 		}
 		return err
 	}

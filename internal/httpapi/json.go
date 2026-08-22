@@ -26,13 +26,14 @@ func writeJSON(w http.ResponseWriter, status int, v any) {
 }
 func writeErr(w http.ResponseWriter, err error) {
 	status := http.StatusInternalServerError
-	if errors.Is(err, model.ErrInvalidInput) {
+	switch {
+	case errors.Is(err, model.ErrInvalidInput):
 		status = http.StatusBadRequest
-	} else if model.IsNotFound(err) {
+	case model.IsNotFound(err):
 		status = http.StatusNotFound
-	} else if errors.Is(err, model.ErrConflict) {
+	case model.IsConflict(err):
 		status = http.StatusConflict
-	} else if errors.Is(err, model.ErrState) {
+	case errors.Is(err, model.ErrState):
 		status = http.StatusUnprocessableEntity
 	}
 	writeJSON(w, status, map[string]any{"error": err.Error()})
