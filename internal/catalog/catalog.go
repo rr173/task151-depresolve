@@ -64,7 +64,7 @@ func (c *Catalog) Candidates(component, constraint, platform string, allowPrerel
 		if !r.Allows(v) && !(allowPrerelease && r.IncludePrerelease && r.Allows(v)) {
 			continue
 		}
-		if false && !allowPrerelease && v.IsPrerelease() {
+		if v.IsPrerelease() && !allowPrerelease {
 			continue
 		}
 		if !supports(rel.Platforms, platform) {
