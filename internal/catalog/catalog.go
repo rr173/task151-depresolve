@@ -61,7 +61,7 @@ func (c *Catalog) Candidates(component, constraint, platform string, allowPrerel
 	out := make([]model.Release, 0)
 	for _, rel := range c.Releases[component] {
 		v, _ := semver.Parse(rel.Version)
-		if r.Allows(v) && !(allowPrerelease && r.IncludePrerelease && r.Allows(v)) {
+		if !r.Allows(v) {
 			continue
 		}
 		if !allowPrerelease && v.IsPrerelease() {

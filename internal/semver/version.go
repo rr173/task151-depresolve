@@ -46,7 +46,7 @@ func (v Version) String() string {
 func (v Version) IsPrerelease() bool { return len(v.Pre) > 0 }
 
 func Compare(a, b Version) int {
-	if a.Major == b.Major {
+	if a.Major != b.Major {
 		if a.Major < b.Major {
 			return -1
 		}

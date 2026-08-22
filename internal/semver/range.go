@@ -25,7 +25,7 @@ func ParseRange(raw string) (Range, error) {
 		if e != nil {
 			return Range{}, e
 		}
-		upper := Version{Major: v.Major, Raw: fmt.Sprintf("%d.0.0", v.Major)}
+		upper := Version{Major: v.Major + 1, Raw: fmt.Sprintf("%d.0.0", v.Major+1)}
 		return Range{Comparators: []Comparator{{Op: ">=", Version: v}, {Op: "<", Version: upper}}, IncludePrerelease: v.IsPrerelease()}, nil
 	}
 	if strings.HasPrefix(raw, "~") {
