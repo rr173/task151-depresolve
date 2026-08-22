@@ -1,6 +1,7 @@
 package solver
 
 import (
+	"errors"
 	"fmt"
 	"sort"
 	"strings"
@@ -82,7 +83,15 @@ func resolveComponent(s *state, in Input, component string, path []string) error
 	constraintText := combine(cs)
 	candidates, err := in.Catalog.Candidates(component, constraintText, in.Request.Platform, in.Request.AllowPrerelease)
 	if err != nil {
-		return err
+		// A missing component is treated the same as having no candidates: an
+		// optional, unlocked dependency that points at a component with no
+		// satisfiable versions (including one that does not exist) is skipped
+		// rather than allowed to fail the whole plan. Required or locked
+		// dependencies still surface as a conflict below.
+		if !errors.Is(err, model.ErrNotFound) {
+			return err
+		}
+		candidates = nil
 	}
 	lock := in.Request.Locks[component]
 	if lock != "" {
@@ -99,14 +108,11 @@ func resolveComponent(s *state, in Input, component string, path []string) error
 		}
 	}
 	if len(candidates) == 0 {
-		optional := true
-		for _, c := range cs {
-			if !c.optional {
-				optional = false
-				break
-			}
-		}
-		if !optional && !isLocked(component, in.Request.Locks) {
+		// A component with no satisfiable candidates is only skippable when
+		// every constraint on it is optional and none is locked; in that
+		// case the dependency is simply unsatisfied and must not fail the
+		// core resolution. Anything required or locked is a real conflict.
+		if skippable(cs, in.Request.Locks) {
 			return nil
 		}
 		kind := model.ConflictRange
@@ -180,6 +186,27 @@ func combine(cs []constraint) string {
 	return strings.Join(parts, " ")
 }
 func isLocked(id string, locks map[string]string) bool { _, ok := locks[id]; return ok }
+
+// skippable reports whether a component with no satisfiable candidates may be
+// dropped instead of failing the resolution. That holds only when every
+// constraint on the component is optional and none is locked: optional,
+// unlocked dependencies are "best effort" and are skipped when unsatisfiable,
+// whereas a required constraint or a locked optional one must surface a
+// conflict. A component with no constraints at all (e.g. the root) is never
+// skippable.
+func skippable(cs []constraint, locks map[string]string) bool {
+	if len(cs) == 0 {
+		return false
+	}
+	for _, c := range cs {
+		// A required or locked constraint, or a component pinned by a
+		// request lock, must be satisfied and therefore may not be skipped.
+		if !c.optional || c.locked {
+			return false
+		}
+	}
+	return true
+}
 func addConflict(s *state, component string, kind model.ConflictKind, msg string, path []string, candidates []string) {
 	s.conflicts = append(s.conflicts, model.Conflict{ComponentID: component, Kind: kind, Message: msg, Path: strings.Join(path, " -> "), Candidates: candidates})
 }
