@@ -44,16 +44,18 @@ type ResolveRequest struct {
 }
 
 type ResolveRun struct {
-	ID              string     `json:"id"`
-	RootComponent   string     `json:"root_component"`
-	RootConstraint  string     `json:"root_constraint"`
-	Platform        string     `json:"platform"`
-	AllowPrerelease bool       `json:"allow_prerelease"`
-	InputDigest     string     `json:"input_digest"`
-	Status          RunStatus  `json:"status"`
-	Error           string     `json:"error,omitempty"`
-	CreatedAt       time.Time  `json:"created_at"`
-	FinishedAt      *time.Time `json:"finished_at,omitempty"`
+	ID              string            `json:"id"`
+	RootComponent   string            `json:"root_component"`
+	RootConstraint  string            `json:"root_constraint"`
+	Platform        string            `json:"platform"`
+	AllowPrerelease bool              `json:"allow_prerelease"`
+	Locks           map[string]string `json:"locks,omitempty"`
+	Policy          string            `json:"policy,omitempty"`
+	InputDigest     string            `json:"input_digest"`
+	Status          RunStatus         `json:"status"`
+	Error           string            `json:"error,omitempty"`
+	CreatedAt       time.Time         `json:"created_at"`
+	FinishedAt      *time.Time        `json:"finished_at,omitempty"`
 }
 
 type Selection struct {

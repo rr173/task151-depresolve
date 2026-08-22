@@ -77,5 +77,5 @@ func (s *Service) RetryResolve(ctx context.Context, id string) (model.ResolveRes
 	if err != nil {
 		return model.ResolveResponse{}, err
 	}
-	return s.Resolve(ctx, model.ResolveRequest{ID: newID("retry"), RootComponent: r.RootComponent, RootConstraint: r.RootConstraint, Platform: r.Platform, AllowPrerelease: r.AllowPrerelease})
+	return s.Resolve(ctx, model.ResolveRequest{ID: newID("retry"), RootComponent: r.RootComponent, RootConstraint: r.RootConstraint, Platform: r.Platform, AllowPrerelease: r.AllowPrerelease, Locks: r.Locks, Policy: r.Policy})
 }

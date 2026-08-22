@@ -257,11 +257,15 @@ func (s *Store) GetRun(ctx context.Context, id string) (model.ResolveRun, error)
 	var r model.ResolveRun
 	var allow int
 	var created, finished int64
-	err := s.db.QueryRowContext(ctx, `SELECT id,root_component,root_constraint,platform,allow_prerelease,input_digest,status,error,created_at,finished_at FROM resolve_runs WHERE id=?`, id).Scan(&r.ID, &r.RootComponent, &r.RootConstraint, &r.Platform, &allow, &r.InputDigest, &r.Status, &r.Error, &created, &finished)
+	var locks string
+	err := s.db.QueryRowContext(ctx, `SELECT id,root_component,root_constraint,platform,allow_prerelease,locks,policy,input_digest,status,error,created_at,finished_at FROM resolve_runs WHERE id=?`, id).Scan(&r.ID, &r.RootComponent, &r.RootConstraint, &r.Platform, &allow, &locks, &r.Policy, &r.InputDigest, &r.Status, &r.Error, &created, &finished)
 	if errors.Is(err, sql.ErrNoRows) {
 		return r, model.ErrNotFound
 	}
 	if err != nil {
+		return r, err
+	}
+	if err := unmarshal(locks, &r.Locks); err != nil {
 		return r, err
 	}
 	r.AllowPrerelease = intBool(allow)
@@ -276,7 +280,7 @@ func (s *Store) ListRuns(ctx context.Context, limit, offset int) ([]model.Resolv
 	if limit <= 0 || limit > 100 {
 		limit = 20
 	}
-	rows, err := s.db.QueryContext(ctx, `SELECT id,root_component,root_constraint,platform,allow_prerelease,input_digest,status,error,created_at,finished_at FROM resolve_runs ORDER BY created_at DESC,id DESC LIMIT ? OFFSET ?`, limit, offset)
+	rows, err := s.db.QueryContext(ctx, `SELECT id,root_component,root_constraint,platform,allow_prerelease,locks,policy,input_digest,status,error,created_at,finished_at FROM resolve_runs ORDER BY created_at DESC,id DESC LIMIT ? OFFSET ?`, limit, offset)
 	if err != nil {
 		return nil, 0, err
 	}
@@ -286,7 +290,11 @@ func (s *Store) ListRuns(ctx context.Context, limit, offset int) ([]model.Resolv
 		var r model.ResolveRun
 		var allow int
 		var created, finished int64
-		if err := rows.Scan(&r.ID, &r.RootComponent, &r.RootConstraint, &r.Platform, &allow, &r.InputDigest, &r.Status, &r.Error, &created, &finished); err != nil {
+		var locks string
+		if err := rows.Scan(&r.ID, &r.RootComponent, &r.RootConstraint, &r.Platform, &allow, &locks, &r.Policy, &r.InputDigest, &r.Status, &r.Error, &created, &finished); err != nil {
+			return nil, 0, err
+		}
+		if err := unmarshal(locks, &r.Locks); err != nil {
 			return nil, 0, err
 		}
 		r.AllowPrerelease = intBool(allow)
